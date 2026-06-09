@@ -1,0 +1,186 @@
+
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .wrap { padding: 1.2rem 1rem 2rem; }
+
+  .header-card {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    border-left: 3px solid #534AB7;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.4rem;
+  }
+  .header-card .course { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .header-card .title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .header-card .meta { font-size: 12px; color: var(--color-text-secondary); margin-top: 4px; }
+
+  .section { margin-bottom: 6px; border-radius: var(--border-radius-md); overflow: hidden; border: 0.5px solid var(--color-border-tertiary); }
+
+  .sec-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0.6rem 0.9rem; cursor: pointer;
+    background: var(--color-background-secondary);
+    user-select: none; transition: filter 0.15s;
+  }
+  .sec-header:hover { filter: brightness(0.96); }
+
+  .badge {
+    font-size: 10px; font-weight: 500; padding: 2px 7px;
+    border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+  }
+  .sec-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+  .sec-time { font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap; }
+  .chevron { font-size: 10px; color: var(--color-text-tertiary); transition: transform 0.2s; flex-shrink: 0; }
+  .chevron.open { transform: rotate(90deg); }
+
+  .sec-body { display: none; background: var(--color-background-primary); padding: 0.7rem 1rem 0.8rem 1rem; border-top: 0.5px solid var(--color-border-tertiary); }
+  .sec-body.open { display: block; }
+
+  .point { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; color: var(--color-text-secondary); line-height: 1.55; }
+  .point:last-child { margin-bottom: 0; }
+  .dot { flex-shrink: 0; color: var(--color-text-tertiary); margin-top: 1px; }
+
+  .tag {
+    display: inline-block; font-size: 10px; padding: 1px 6px;
+    border-radius: 4px; margin-left: 4px; vertical-align: middle; font-weight: 500;
+  }
+
+  .b-purple { background: #EEEDFE; color: #3C3489; }
+  .b-teal   { background: #E1F5EE; color: #085041; }
+  .b-blue   { background: #E6F1FB; color: #0C447C; }
+  .b-amber  { background: #FAEEDA; color: #633806; }
+  .b-green  { background: #EAF3DE; color: #27500A; }
+  .b-coral  { background: #FAECE7; color: #712B13; }
+
+  @media (prefers-color-scheme: dark) {
+    .b-purple { background: #26215C; color: #CECBF6; }
+    .b-teal   { background: #04342C; color: #9FE1CB; }
+    .b-blue   { background: #042C53; color: #B5D4F4; }
+    .b-amber  { background: #412402; color: #FAC775; }
+    .b-green  { background: #173404; color: #C0DD97; }
+    .b-coral  { background: #4A1B0C; color: #F0997B; }
+  }
+
+  .footer {
+    margin-top: 1rem; padding: 0.6rem 0.9rem;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--color-text-tertiary);
+  }
+  .hint { text-align: center; font-size: 11px; color: var(--color-text-tertiary); margin-top: 6px; }
+</style>
+
+<div class="wrap">
+  <div class="header-card">
+    <div class="course">智能交互技术 · 研究生 Presentation</div>
+    <div class="title">人类工效学：智能交互时代的人本设计</div>
+    <div class="meta">共 6 部分 · 建议 18–22 分钟 · 约 12–15 张幻灯片</div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header" onclick="toggle(this)">
+      <span class="chevron">▶</span>
+      <span class="badge b-coral">00</span>
+      <span class="sec-title">开场：一张"反面教材"幻灯片</span>
+      <span class="sec-time">~1 min</span>
+    </div>
+    <div class="sec-body">
+      <div class="point"><span class="dot">·</span><span>第一页故意做成低对比度、字体混乱、信息过载的"丑页"，第二页瞬间切换为规范设计</span></div>
+      <div class="point"><span class="dot">·</span><span>切换后问观众：哪一页更难受？为什么？——引出"设计不以人为本是有代价的"这一核心问题</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header" onclick="toggle(this)">
+      <span class="chevron">▶</span>
+      <span class="badge b-purple">01</span>
+      <span class="sec-title">人类工效学是什么</span>
+      <span class="sec-time">~3 min</span>
+    </div>
+    <div class="sec-body">
+      <div class="point"><span class="dot">·</span><span>定义：研究人与系统之间的适配关系，核心目标是降低认知与生理负担、提升效率与安全性<span class="tag b-purple">立定义</span></span></div>
+      <div class="point"><span class="dot">·</span><span>三个子领域：物理工效学（姿势/力/环境）、认知工效学（注意力/记忆/决策）、组织工效学（工作流/团队协作）</span></div>
+      <div class="point"><span class="dot">·</span><span>学科边界：不是 UI 设计，不是心理学，而是横跨工程、医学、行为科学的交叉学科</span></div>
+      <div class="point"><span class="dot">·</span><span>一句话锚定：工效学研究的本质问题是——<em>"系统如何适应人，而不是人去适应系统"</em></span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header" onclick="toggle(this)">
+      <span class="chevron">▶</span>
+      <span class="badge b-teal">02</span>
+      <span class="sec-title">为什么要研究它</span>
+      <span class="sec-time">~3 min</span>
+    </div>
+    <div class="sec-body">
+      <div class="point"><span class="dot">·</span><span>代价是真实的：美国每年因重复性劳损造成的工伤占工伤总量约 1/3；航空事故中人为因素占 70%+ <span class="tag b-teal">数据支撑</span></span></div>
+      <div class="point"><span class="dot">·</span><span>工业界的地位：Apple、Google、Meta 等公司均设有专门的 Human Factors 团队，早于产品研发介入</span></div>
+      <div class="point"><span class="dot">·</span><span>学术价值：工效学提供了可量化的评估框架（任务完成时间、错误率、认知负荷量表 NASA-TLX），弥补了纯定性用户研究的不足</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header" onclick="toggle(this)">
+      <span class="chevron">▶</span>
+      <span class="badge b-blue">03</span>
+      <span class="sec-title">"交互"维度：从命令行到空间计算</span>
+      <span class="sec-time">~4 min</span>
+    </div>
+    <div class="sec-body">
+      <div class="point"><span class="dot">·</span><span>演变主线：CLI → GUI → 触屏 → 语音 → 手势/空间——每一次范式转移都重新定义了工效学的研究问题 <span class="tag b-blue">核心论点</span></span></div>
+      <div class="point"><span class="dot">·</span><span>触屏时代的经典问题：无触感反馈、"胖手指"效应、单手操作拇指区——工效学原则如何随输入方式改变</span></div>
+      <div class="point"><span class="dot">·</span><span>语音交互的工效学挑战：歧义、噪声环境下准确率下降、用户建立正确心智模型的成本</span></div>
+      <div class="point"><span class="dot">·</span><span>空间计算（VR/AR）的新问题：长时间使用导致的"大猩猩手臂"效应（Gorilla Arm Syndrome）、视觉疲劳、空间晕动症</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header" onclick="toggle(this)">
+      <span class="chevron">▶</span>
+      <span class="badge b-amber">04</span>
+      <span class="sec-title">"智能"维度：AI 带来的新范式挑战</span>
+      <span class="sec-time">~4 min</span>
+    </div>
+    <div class="sec-body">
+      <div class="point"><span class="dot">·</span><span>范式转变：从"静态界面工效学"到"动态、自适应、不可预测系统"的工效学——人无法预知 AI 的输出 <span class="tag b-amber">核心论点</span></span></div>
+      <div class="point"><span class="dot">·</span><span>可解释性问题：AI 黑盒决策破坏了工效学中"系统可见性"（Visibility）原则——用户无法建立正确的心智模型</span></div>
+      <div class="point"><span class="dot">·</span><span>人机信任校准：过度信任（automation bias）与信任不足（disuse）都会导致系统效率下降，是当前 HAI 研究的核心议题</span></div>
+      <div class="point"><span class="dot">·</span><span>自适应界面的工效学悖论：系统越"聪明"，用户越难预测其行为，反而可能增加认知负荷</span></div>
+      <div class="point"><span class="dot">·</span><span>案例：特斯拉全触屏车载系统的工效学争议（NHTSA 研究），驾驶时视线转移时间超标</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header" onclick="toggle(this)">
+      <span class="chevron">▶</span>
+      <span class="badge b-green">05</span>
+      <span class="sec-title">对 AI 研究生的启示</span>
+      <span class="sec-time">~3 min</span>
+    </div>
+    <div class="sec-body">
+      <div class="point"><span class="dot">·</span><span>做系统时：准确率不是唯一指标——一个 95% 准确但让用户困惑的 AI 系统，不如 85% 准确但可预期的系统 <span class="tag b-green">给建议</span></span></div>
+      <div class="point"><span class="dot">·</span><span>做研究时：用工效学评估框架（如 NASA-TLX、SUS 量表）量化用户体验，是让系统论文更有说服力的有力补充</span></div>
+      <div class="point"><span class="dot">·</span><span>设计智能体（Agent）时：保留"人在回路"（Human-in-the-Loop）的干预节点，是工效学视角对自动化系统的核心要求</span></div>
+      <div class="point"><span class="dot">·</span><span>一个开放问题留给观众：当 AI 系统可以完全替代物理操作，工效学研究的边界在哪里？认知工效学是否会成为主战场？</span></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>开场反例 + 5 个正式章节</span>
+    <span>两条主线：交互 · 智能</span>
+    <span>建议 12–15 张 slides</span>
+  </div>
+  <div class="hint">点击各部分展开详细内容</div>
+</div>
+
+<script>
+function toggle(header) {
+  const chevron = header.querySelector('.chevron');
+  const body = header.nextElementSibling;
+  const open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  chevron.classList.toggle('open', !open);
+}
+</script>
