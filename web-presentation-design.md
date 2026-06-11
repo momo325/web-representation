@@ -1,117 +1,258 @@
-# Web Presentation Design Guidelines
-**基于 Starbucks 规范与放映机视觉调整的最佳实践**
+# Web Native Presentation 架构设计与技术要点总结
 
-这份指导文件汇总了我们在本项目中确立的 Web 幻灯片设计规范。后续开发可以直接参考此文档，确保样式、布局、字体和色彩符合高可用性、高对比度的工效学要求。
+这是一个基于纯前端技术栈（HTML/CSS/Vanilla JS）构建的**零依赖、单文件、全响应式**的网页端幻灯片（Presentation）引擎方案。
 
----
-
-## 1. 核心布局规范 (The 1/7 Rule)
-
-为了避免幻灯片内容顶满屏幕带来的“紧张提肛感”，并保证所有页面的视觉连贯性，我们采用了**绝对稳定的百分比布局**，核心原则是上下各留白约 `1/7 (14%)`。
-
-- **安全边界**：页面顶部 `0-14%` 和 底部 `86%-100%` 属于安全留白区（仅用于背景或进度条，不可放主内容）。
-- **标题区 (Slide Header)**：
-  - `position: absolute; top: 14%; left: 7%; width: 86%; height: 12%;`
-  - 使用 `flex-end` 底部对齐，确保即使标题行数变化，正文的起始线也绝对统一。
-- **内容区 (Slide Content)**：
-  - `position: absolute; top: 30%; left: 7%; width: 86%; height: 56%;`
-  - 占据中间约 `5/7` 的区域，内容自适应排布。
-- **绝对稳定**：摒弃让外层容器 `justify-content: center` 导致的跳动，采用固定 `top` 值锁定每一页的基准线。
+该方案放弃了传统的 PPT 或复杂的现代前端框架，旨在提供极致的渲染性能、完全自由的排版能力、以及完美的跨端与导出支持。以下是其核心技术点与通用脱敏模板。
 
 ---
 
-## 2. 颜色体系 (Color Palette)
+## 核心技术要点
 
-色彩融合了 Starbucks 的质感，但针对**放映机低对比度**的痛点进行了增强：
+### 1. 基于容器查询单元（Container Queries Units）的绝对响应式
+不同于传统的 `vw/vh` 或媒体查询，本方案使用 CSS 容器查询单位（`cqw` / `cqh`）。
+* **原理**：将幻灯片主容器（`#slideFrame`）声明为 `container-type: inline-size`，内部所有元素的字号、边距、间距全部使用 `cqw` 为单位。
+* **效果**：无论外部浏览器窗口如何拉伸，只要主容器保持 4:3 比例缩放，内部所有的排版、文字大小都会**绝对等比缩放**，永远不会出现文字换行错位。
 
-### 核心背景 (Canvas)
-放映机对深色背景非常不友好（吸光、对比度差）。
-- 🟢 **推荐使用**：
-  - **Cream (奶油暖白)**: `var(--canvas-warm)` `#f2f0eb` — 首选主背景，给人温和不刺眼的呼吸感。
-  - **White (纯白)**: `var(--surface-white)` `#ffffff` — 用于卡片或次要交替背景。
-- ❌ **严禁使用**：
-  - 纯黑或深色主背景（如原来的 `data-theme="dark"`）。
+### 2. 完美的 4:3 约束容器
+通过 CSS 数学计算，在任何视口比例下都维持 4:3 的居中画幅：
+```css
+#slideFrame {
+  width: 100%; height: 100%;
+  max-width: calc(100vh * 4 / 3); /* 限制最大宽度由高度决定 */
+  max-height: calc(100vw * 3 / 4); /* 限制最大高度由宽度决定 */
+}
+```
 
-### 品牌主色 (Greens)
-- **Starbucks Green**: `#006241` — 用于大标题、强调重点。
-- **Green Accent**: `#00754A` — 用于进度条、重点强调的边框、激活状态。
-- **Green House**: `#1E3932` — 用于极少部分需要重色压阵的文本或图表头。
-- **Green Light**: `#d4e9e2` — 用于卡片底色、提示框背景（浅色护眼）。
+### 3. 极简的 CSS 状态机与微动效重置
+幻灯片的切换由 JS 控制类名（`active`, `exit-left`）完成，通过 CSS Transition 实现平滑的滑动与淡入淡出。
+对于幻灯片内部的微动效（如元素依次向上浮现），JS 会在每次切页时触发一次 DOM 重绘（Reflow），从而让 CSS Keyframes 重新执行：
+```javascript
+el.style.animation = 'none';
+el.offsetHeight; // 触发重绘
+el.style.animation = '';
+```
 
-### 高对比度文本 (Text Colors)
-**彻底弃用细灰字体**（Slim Grey），提升字重视认度：
-- **Primary Text**: `rgba(0, 0, 0, 0.95)` (不再是原来的 0.87) — 近乎纯黑，确保投屏绝对清晰。
-- **Secondary Text**: `rgba(0, 0, 0, 0.85)` (不再是原来的 0.58) — 作为副文本，依旧保持极高的对比度。
+### 4. 动态主题注入（Theming System）
+通过给幻灯片元素添加 `data-theme="dark"` 等自定义属性。CSS 层利用属性选择器（`.slide[data-theme="dark"]`）更改背景。同时 JS 层会读取当前幻灯片的主题，自动反色右上角的导航控制按钮，确保可见性。
 
----
+### 5. 沉浸式 Letterboxing（上下黑边黑屏动画）
+针对特定需要营造视觉反差的幻灯片，系统在主容器上方覆盖两个绝对定位的黑色 DIV。
+通过 JS 动态控制这两个黑框的高度（`12.5%`），可以将原有的 4:3 画幅瞬间压缩至 16:9（入场时取消 transition 营造突兀感），切出时再通过 `1.5s` 缓动拉开黑幕，营造强烈的视觉冲击。
 
-## 3. 字体与排版 (Typography)
-
-- **字体栈**: `'Inter', 'Noto Sans SC', -apple-system, sans-serif`
-- **字间距**: `letter-spacing: -0.01em` (紧凑的质感)
-- **字重策略**（向上升档）：
-  - 标题：`800` 或 `900`
-  - 小标题/强调用语：`700` 或 `800`
-  - 正文文本：最低 `500` 或 `600`（不要使用 `400` 常规体，容易在强光下发虚）。
-
-### 尺寸参考 (基于 `cqw`)
-为了实现绝对锁定的 `4:3` 容器内自适应缩放，并保证完美的 PDF 打印输出，本项目使用 **`cqw` (Container Query Width)** 作为排版单位，容器为 `#slideFrame`：
-- **主标题 (Slide Title)**: `4cqw` 左右，极简设计中可放大至 `6.67cqw`
-- **内容块标题 (Card Value/Label)**: `2cqw` 或 `2.13cqw`
-- **正文内容 (Card Desc/List/Flow)**: `2cqw` 到 `2.4cqw` 之间（保障会议室远距离可读性）
-- **微注释/徽章 (Badge/Small)**: `1.47cqw` 到 `1.6cqw`
+### 6. PDF 导出黑科技（异步探针+媒体查询）
+系统不仅适配了 `@media print` 强制所有 `.slide` 拥有 `page-break-after: always` 及重置为正常的文档流，还加入了**智能附件扫描**机制：
+* 触发导出时，JS 会异步 `new Image()` 探测每页是否有附属的图解（如 `1.png`, `1.1.png`）。
+* 将探测到的图片自动生成专属的 `<div class="slide print-only">` 插入 DOM 中。
+* 由于 `.print-only` 默认不在屏幕上显示（被 CSS 隐藏），因此完全不影响网页播放，但在 `window.print()` 调用时，PDF 内会自动多出高清的图片页。
 
 ---
 
-## 4. 组件细节与坑点排雷 (Components & Gotchas)
+## 单文件通用模板 (Boilerplate)
 
-### 卡片与列表 (Cards & Lists)
-- **圆角**: `var(--card-radius)` 统一为 `12px`。
-- **阴影**: `0px 0px .5px 0px rgba(0,0,0,0.14), 0px 1px 1px 0px rgba(0,0,0,0.24)`（极轻微阴影，依靠背景色差体现层级）。
-- **⚠️ 列表溢出坑点**：不要在 `.clist` (Card List) 内部强行使用 `flex: 1; justify-content: space-evenly;`。如果在小尺寸屏幕上，等距分散会直接撑爆卡片底边。应使用 `margin-top: 1.5cqw; gap: 1cqw;` 让其自然自上而下排布。
+以下是完全脱敏的完整单文件模板，直接复制保存为 `index.html` 并在浏览器中打开，即可获得所见即所得的极简幻灯片体验。
 
-### 流程与逻辑链 (Flow Rows)
-- 表示步骤的 `A -> B -> C` 流程块，务必设置 `flex-wrap: nowrap`，并适度调整内边距（如 `padding: 1.33cqw 2cqw`）及字号，确保它们永远在一行显示，不可折行。
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
 
-### 并排对比布局 (Two-Column Compare)
-- `人优于机器` vs `机器优于人` 这类对比，使用 `display: grid; grid-template-columns: 1fr 1fr;` (`.two-col`)，而不是垂直的弹性布局。
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Presentation Title</title>
+  <style>
+    :root {
+      --bg-color: #f7f7f8;
+      --text-color: #333333;
+      --accent-color: #0078D4;
+    }
 
-### 动画 (Animations)
-- 仅使用低干预的过渡动效。
-- `.ani.d1`, `.ani.d2` 依次类推的 `fadeUp` (上浮渐出)，位移不要超过 `15px`，以不干扰用户的阅读预期为核心原则。
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body, html {
+      width: 100%; height: 100%;
+      overflow: hidden; background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+    }
 
----
+    /* 4:3 主容器 */
+    #slideFrame {
+      container-type: inline-size;
+      position: relative;
+      width: 100%; height: 100%;
+      max-width: calc(100vh * 4 / 3);
+      max-height: calc(100vw * 3 / 4);
+      background: var(--bg-color);
+      overflow: hidden;
+    }
 
-## 5. 设计审查清单 (Checklist for New Slides)
+    /* 幻灯片基础样式 */
+    .slide {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0; transform: translateX(50px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+      background: var(--bg-color);
+    }
+    
+    .slide.active { opacity: 1; transform: translateX(0); pointer-events: all; }
+    .slide.exit-left { opacity: 0; transform: translateX(-50px); }
 
-1. [ ] 内容是否限定在屏幕纵向 `14%` 到 `86%` 之间？
-2. [ ] 是否使用了深色文字 (`opacity >= 0.85`) 和浅色背景 (`Cream` 或 `White`)？
-3. [ ] 正文字重是否达到 `500` 以上？
-4. [ ] 逻辑链或双列内容是否做好了防溢出处理（`nowrap`, 适度的 `gap`）？
-5. [ ] 主标题是否对齐在左上角固定的基准线上？
+    /* 主题化 */
+    .slide[data-theme="dark"] { background: #1a1a1a; color: #ffffff; }
 
----
+    /* 布局排版与 cqw 适配 */
+    .content-box {
+      position: absolute;
+      top: 15%; left: 10%; width: 80%; height: 70%;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    
+    h1 { font-size: 6cqw; margin-bottom: 2cqw; }
+    p { font-size: 2.5cqw; line-height: 1.6; }
 
-## 6. 原生高清 PDF 导出 (Native PDF Export)
+    /* 入场动画类 */
+    .ani {
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .d1 { animation-delay: 0.2s; }
+    .d2 { animation-delay: 0.4s; }
 
-为了保证最极致的**“所见即所得”**，并且保留真正的矢量高清文字（文字可选中、可无限放大），本项目彻底重构了导出架构，结合 `@media print` 与 `cqw` 容器查询，实现完美的浏览器原生打印。
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(3cqw); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-**全新导出流程：**
-1. **一键触发**：点击页面导航栏右上角的 **[PDF]** 按钮，系统会弹出前置参数指引。
-2. **调起打印**：点击确定后，会自动调起浏览器的原生打印预览面板。
-3. **参数配置（极其关键）**：
-   - **目标打印机**：必须选择 `Microsoft Print to PDF`
-   - **纸张尺寸**：选择 `12x16in`
-   - **边距**：选择 `无`
-   - **缩放**：选择 `自定义` -> `120`
-4. **无损导出**：点击保存即可生成 4:3 画幅的汇报级 PDF！所有基于 `cqw` 的字号比例、元素排版都会完美映射到物理纸张尺寸上，绝不会发生缩小或错乱。
+    /* 导航栏 */
+    .nav-container {
+      position: absolute; top: 3%; right: 3%;
+      display: flex; gap: 8px; z-index: 100;
+    }
+    .nav-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: none; background: rgba(0,0,0,0.1); cursor: pointer;
+      font-size: 16px; font-weight: bold; transition: 0.2s;
+    }
+    .nav-btn:hover { background: var(--accent-color); color: white; }
+    .nav-dark .nav-btn { background: rgba(255,255,255,0.2); color: white; }
 
----
+    /* 进度条 */
+    .progress-bar {
+      position: absolute; bottom: 0; left: 0;
+      height: 4px; background: var(--accent-color);
+      width: 0%; transition: width 0.3s ease; z-index: 100;
+    }
 
-## 7. 图片弹窗与多图轮换方案 (Image Modal Scheme)
+    /* 打印与导出样式 */
+    @media print {
+      @page { size: 16in 12in; margin: 0; }
+      body, html, #slideFrame {
+        width: 100% !important; height: auto !important;
+        max-width: none !important; max-height: none !important;
+      }
+      .nav-container, .progress-bar { display: none !important; }
+      .slide {
+        position: relative !important; opacity: 1 !important; transform: none !important;
+        page-break-after: always; height: 12in !important; width: 16in !important;
+      }
+    }
+  </style>
+</head>
 
-为应对复杂的演示场景，系统内置了无缝的全局图片弹窗支持，设计逻辑如下：
-- **触发机制**：点击右上角 👁 按钮或按键盘 **向下方向键 (↓)**。
-- **单图模式**：图片需放在与 HTML 同级的目录下，命名格式为 `X.png` (X 为当前页码，即展示的 `13/16` 中的 13，例如 `6.png`)。
-- **多图轮换**：若当前页需要展示多张图片，请严格按递增后缀命名：`X.png`, `X.1.png`, `X.2.png`, `X.3.png`... (例如：`6.png`, `6.1.png`, `6.2.png`...)。在弹窗打开状态下，继续按 **向下方向键 (↓)** 将自动轮换至下一张。当穷尽所有图片时，弹窗自动优雅关闭。
-- **静默防尴尬**：系统在每次调起时会自动探测对应文件。如果某页没有配置图片，系统将**完全静默，不触发任何操作或报错**，保障汇报的绝对流畅。
+<body>
+  <div id="slideFrame">
+    <!-- Slide 1 -->
+    <div class="slide" data-index="0">
+      <div class="content-box">
+        <h1 class="ani">Web-Native Presentation</h1>
+        <p class="ani d1">A zero-dependency, single-file HTML presentation engine.</p>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" data-index="1" data-theme="dark">
+      <div class="content-box">
+        <h1 class="ani">Features</h1>
+        <p class="ani d1">✓ Container Query Responsiveness</p>
+        <p class="ani d2">✓ PDF Export Support</p>
+        <p class="ani d2" style="animation-delay:0.6s">✓ Dark/Light Themes</p>
+      </div>
+    </div>
+
+    <!-- 进度与导航 -->
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="nav-container" id="navContainer">
+      <button class="nav-btn" onclick="exportPDF()" style="width: auto; padding: 0 15px; border-radius: 20px;">PDF</button>
+      <button class="nav-btn" onclick="prevSlide()">‹</button>
+      <button class="nav-btn" onclick="nextSlide()">›</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    let cur = 0;
+
+    function showSlide(idx, dir = 'next') {
+      if (idx < 0 || idx >= total) return;
+      slides.forEach(s => s.classList.remove('active', 'exit-left'));
+      if (dir === 'next') slides[cur].classList.add('exit-left');
+      
+      cur = idx;
+      slides[cur].classList.add('active');
+      
+      // 重置微动效
+      slides[cur].querySelectorAll('.ani').forEach(el => {
+        el.style.animation = 'none';
+        el.offsetHeight; 
+        el.style.animation = '';
+      });
+      
+      updateUI();
+    }
+
+    function nextSlide() { if (cur < total - 1) showSlide(cur + 1, 'next'); }
+    function prevSlide() { if (cur > 0) showSlide(cur - 1, 'prev'); }
+
+    function updateUI() {
+      document.getElementById('progressBar').style.width = (cur / (total - 1)) * 100 + '%';
+      
+      const theme = slides[cur].dataset.theme;
+      const nav = document.getElementById('navContainer');
+      if (theme === 'dark') {
+        nav.classList.add('nav-dark');
+      } else {
+        nav.classList.remove('nav-dark');
+      }
+    }
+
+    function exportPDF() {
+      alert(`Print Setup:\n\n1. Destination: Save as PDF\n2. Paper size: Custom 16x12in (or leave default if forced by CSS)\n3. Margins: None\n4. Background graphics: Checked`);
+      window.print();
+    }
+
+    // 键盘绑定
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); nextSlide(); }
+      if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); prevSlide(); }
+      if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      }
+    });
+
+    // 触摸绑定
+    let tx = 0;
+    document.addEventListener('touchstart', e => { tx = e.changedTouches[0].screenX; });
+    document.addEventListener('touchend', e => {
+      const diff = tx - e.changedTouches[0].screenX;
+      if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+    });
+
+    updateUI();
+    showSlide(0); // 初始渲染
+  </script>
+</body>
+</html>
+```
